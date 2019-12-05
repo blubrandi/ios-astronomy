@@ -28,7 +28,7 @@ class FetchPhotoOperation: ConcurrentOperation {
     // Make a URL Session and a Data Task
     
     private let session: URLSession
-    private var dataTask: URLSessionDataTask?
+    private var dataTask: URLSessionDataTask? // We want this to be accessible both in the start() function and the cancel() function
     
     // Implement an initializer that takes a MarsPhotoReference.
     // We need to get data from API and the URL from the specific photo
@@ -82,12 +82,9 @@ class FetchPhotoOperation: ConcurrentOperation {
     
     override func cancel() {
         
-
+        dataTask?.cancel() // Ends the task.
+        
+        // Since we have a concurrent operation running, we need to call super, that cancels the entire operation --> dataTask AND operation
+        super.cancel()
     }
-
-    
-
-    
-
-    
 }
