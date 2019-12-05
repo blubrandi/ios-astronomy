@@ -69,9 +69,17 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         // TODO: Implement image loading here
     }
     
-    // Properties
+    // MARK: Properties
     
     private let client = MarsRoverClient()
+    
+    // Add the properties we need access to
+    
+    // Cache is a generic type with key and a value.  The Int references the id of each photo (reference MarsPhotoReference, for the properties of the images we receive)
+    private let cache = Cache<Int, Data>()
+    
+    // Add a private property called photoFetchQueue, which is an instance (and type) of OperationQueue.  Not a serial queue.  A serialQueue is main thread.  This will be on a background thread, and then switch it to the main thread once task is complete.
+    private let photoFetchQueue = OperationQueue()
     
     private var roverInfo: MarsRover? {
         didSet {
