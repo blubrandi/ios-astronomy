@@ -100,6 +100,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let completionOP = BlockOperation {
             
+            // Add defer. Every time an operation runs, it attributes memory to each operation.  Once completionOp is done, it will remove the key and its associated value from the dictionary
+            defer { self.operations.removeValue(forKey: photoReference.id) }
+            
             // Get into the cache dictionary.  We only care about the data.  It will rely on the fetchOp
             // Define indexPath.  We want to make sure that each indexPath is the same as the one on the operationQueue, then execute the code.  Used for error handling
             
@@ -121,8 +124,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         // added dependency for completionOp
         completionOP.addDependency(fetchOp)
         photoFetchQueue.addOperation(fetchOp)
+        photoFetchQueue.addOperation(cacheOp)
         
-        // TODO: Implement image loading here
+        // This is all happening on a background thread.  Once it's complete, we need to move it to the main thread for the UI change.  We'll add the completionOp, because it's the operation that is creating the image
+        OperationQueue.main.addOperation(completionOP)
     }
     
     // MARK: Properties
