@@ -60,6 +60,16 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    // Implement Cancellation
+    
+    // When we scroll out of view, the items that have scrolled out of view are going to 'go away' so they aren't taking memory anymore.  And then when we scroll them back into view, they will load again.
+    
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item] // The item at this specific indexPath: cancel it.
+        
+        operations[photoReference.id]?.cancel()
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
