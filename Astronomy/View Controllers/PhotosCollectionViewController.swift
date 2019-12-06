@@ -128,6 +128,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         // This is all happening on a background thread.  Once it's complete, we need to move it to the main thread for the UI change.  We'll add the completionOp, because it's the operation that is creating the image
         OperationQueue.main.addOperation(completionOP)
+        
+        //When you finish creating and starting the operations for a cell, add the fetch operation to your dictionary. This way you can retrieve it later to cancel it if need be.
+        operations[photoReference.id] = fetchOp
     }
     
     // MARK: Properties
