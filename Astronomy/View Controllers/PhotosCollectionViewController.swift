@@ -64,7 +64,63 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-//         let photoReference = photoReferences[indexPath.item]
+         let photoReference = photoReferences[indexPath.item]
+        
+//        Create three operations:
+//        One should be a PhotoFetchOperation to fetch the image data from the network.
+//        One should be used to store received data in the cache.
+//        The last should check if the cell has been reused, and if not, set its image view's image.
+//        The last two of these can be instances of BlockOperation.
+        
+        // Check if there is cached data. If there is cached data, then we can load the image from cache, then if there isn't cached data, perform the network request.
+        
+        if let cachedData = cache.value(key: photoReference.id),
+            // turn data into UIImage
+            let image = UIImage(data: cachedData) {
+            cell.imageView.image = image
+            return
+        }
+        
+        // Fetch data operations performed if there is no cached data -->  Block operations here
+        // Don't need to pass in a URLSession, because we already added it to the operation
+        
+        // We have a background thread and a concurrent operation, let's have them work in tandem
+        let fetchOp = FetchPhotoOperation(photoReference: photoReference)  // declared a classwise instance to fetchOp and passed in the photoReference we have
+        
+
+        // we need to cache image
+        let cacheOp = BlockOperation {
+            if let data = fetchOp.imageData {
+                //how we cache data
+                self.cache.cache(value: data, key: photoReference.id)
+            }
+        }
+        
+        // Set the image that we received from the fetchOp to show in the collection view
+        
+        let completionOP = BlockOperation {
+            
+            // Get into the cache dictionary.  We only care about the data.  It will rely on the fetchOp
+            // Define indexPath.  We want to make sure that each indexPath is the same as the one on the operationQueue, then execute the code.  Used for error handling
+            
+            if let currentIndexPath = self.collectionView.indexPath(for: cell),
+                currentIndexPath != indexPath {
+                print("Got image for reused cell")
+                return
+            }
+            
+            // Convert data from the fetchOp into an image
+            if let data = fetchOp.imageData {
+                cell.imageView.image = UIImage(data: data)
+            }
+        }
+        
+        
+        // Make sure fetchOp is finished before cacheOp begins
+        cacheOp.addDependency(fetchOp)
+        // added dependency for completionOp
+        completionOP.addDependency(fetchOp)
+        photoFetchQueue.addOperation(fetchOp)
         
         // TODO: Implement image loading here
     }
@@ -80,6 +136,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     // Add a private property called photoFetchQueue, which is an instance (and type) of OperationQueue.  Not a serial queue.  A serialQueue is main thread.  This will be on a background thread, and then switch it to the main thread once task is complete.
     private let photoFetchQueue = OperationQueue()
+    
+    // Creating a dictionary of operations Int = photo ID and operation = NSOperation.
+    // Add a dictionary property that you'll use to store fetch operations by the associated photo reference id.
+    private var operations = [Int : Operation]()
     
     private var roverInfo: MarsRover? {
         didSet {
